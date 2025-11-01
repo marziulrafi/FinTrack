@@ -3,9 +3,11 @@ import { Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
+import { useSession, signOut } from "next-auth/react";
 
 export default function Navbar() {
     const pathname = usePathname();
+    const { data: session, status } = useSession();
 
     const links = [
         { name: "Home", href: "/" },
@@ -36,7 +38,6 @@ export default function Navbar() {
                         </svg>
                     </div>
 
-
                     <ul
                         tabIndex={0}
                         className="menu menu-sm dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
@@ -59,7 +60,6 @@ export default function Navbar() {
                 </Link>
             </div>
 
-
             <div className="navbar-center hidden lg:flex">
                 <ul className="menu menu-horizontal px-1">
                     {links.map((link) => (
@@ -75,9 +75,19 @@ export default function Navbar() {
                 </ul>
             </div>
 
-
             <div className="navbar-end">
-                <a className="btn bg-[#067AAC] text-white rounded-xl">Get Started</a>
+                {status === "authenticated" ? (
+                    <button
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                        className="btn bg-[#067AAC] text-white rounded-xl"
+                    >
+                        Logout
+                    </button>
+                ) : (
+                    <Link href='/get-started' className="btn bg-[#067AAC] text-white rounded-xl">
+                        Get Started
+                    </Link>
+                )}
             </div>
         </div>
     );
