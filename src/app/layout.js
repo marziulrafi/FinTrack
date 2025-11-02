@@ -6,12 +6,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" data-theme="light">
       <body>
-         <NextAuthProvider>
-          
-          <Navbar />
-          {children}
-          
-        </NextAuthProvider>
+        <div className="max-w-[1400px] mx-auto px-4">
+          <NextAuthProvider>
+            <Navbar />
+            {children}
+          </NextAuthProvider>
+        </div>
       </body>
     </html>
   );
