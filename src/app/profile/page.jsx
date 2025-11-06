@@ -41,56 +41,56 @@ export default function MyProfilePage() {
             return;
         }
 
-        async function load() {
+        const loadProfile = async () => {
             setLoading(true);
             try {
-                const res = await fetch("/api/user/me", {
-                    headers: { Authorization: `Bearer ${backendToken || ""}` },
+                const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user/me`, {
+                    headers: { Authorization: `Bearer ${backendToken}` },
                 });
-                if (!res.ok) throw new Error("Failed to fetch profile");
+
+                if (!res.ok) throw new Error("Failed to fetch user profile");
                 const data = await res.json();
                 const u = data.user || data;
                 setUser({
-                    _id: u._id || u.id || "",
+                    _id: u._id || "",
                     name: u.name || "",
                     email: u.email || "",
                     phone: u.phone || "",
                     location: u.location || "",
                     image: u.image || "",
                 });
-
             } catch (err) {
                 console.error(err);
-                setNotice("Could not load profile. Try again.");
+                setNotice("Failed to load profile. Try again later.");
             } finally {
                 setLoading(false);
             }
-        }
+        };
 
-        load();
-
+        loadProfile();
     }, [isAuth, backendToken]);
 
-    function initials(name) {
-        if (!name) return "U";
-        return name
-            .split(" ")
-            .map((s) => (s ? s[0] : ""))
-            .slice(0, 2)
-            .join("")
-            .toUpperCase();
-    }
+    const initials = (name) =>
+        !name
+            ? "U"
+            : name
+                .split(" ")
+                .map((s) => s[0])
+                .slice(0, 2)
+                .join("")
+                .toUpperCase();
 
-    async function handleSave(e) {
+    const handleSave = async (e) => {
         e.preventDefault();
-        setNotice("");
         setSaving(true);
+        setNotice("");
+
         try {
-            const res = await fetch("/api/user/me", {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user/me`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${backendToken || ""}`,
+                    Authorization: `Bearer ${backendToken}`,
                 },
                 body: JSON.stringify({
                     name: user.name,
@@ -99,21 +99,21 @@ export default function MyProfilePage() {
                     image: user.image,
                 }),
             });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                setNotice(data.message || "Update failed");
-            } else {
-                setUser((p) => ({ ...p, ...(data.user || {}) }));
-                setNotice("Profile updated");
-            }
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Update failed");
+
+            setUser((p) => ({ ...p, ...(data.user || {}) }));
+            setNotice("Profile updated successfully");
         } catch (err) {
             console.error(err);
-            setNotice("Server error");
+            setNotice(err.message || "Update failed");
         } finally {
             setSaving(false);
             setTimeout(() => setNotice(""), 3000);
         }
-    }
+    };
+
 
     async function handlePasswordChange(e) {
         e.preventDefault();

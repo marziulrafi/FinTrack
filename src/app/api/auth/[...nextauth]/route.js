@@ -1,3 +1,4 @@
+// app/api/auth/[...nextauth]/route.js
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -20,16 +21,14 @@ export const authOptions = {
             body: JSON.stringify({ email: credentials.email, password: credentials.password }),
           });
 
-          if (!res.ok) {
-
-            return null;
-          }
-
+          if (!res.ok) return null;
           const data = await res.json();
-          const user = data?.user;
-          const token = data?.token;
+          const user = data.user;
+          const token = data.token;
 
           if (!user) return null;
+
+          // Return object that will be available in jwt callback as 'user'
           return {
             id: user.id,
             name: user.name,
@@ -50,10 +49,13 @@ export const authOptions = {
     }),
   ],
 
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+  },
 
   callbacks: {
-   async jwt({ token, user, account, profile }) {
+    async jwt({ token, user, account, profile }) {
+      // If user object present (first sign-in via credentials)
       if (user) {
         if (user.backendToken) token.backendToken = user.backendToken;
         if (user.id) token.id = user.id;
@@ -61,9 +63,11 @@ export const authOptions = {
         if (user.email) token.email = user.email;
         if (user.image) token.image = user.image;
       }
-if (account && account.provider === "google" && profile) {
+
+      // First-time sign in with Google: account & profile present
+      if (account?.provider === "google" && profile) {
         try {
-           const resp = await fetch(`${BACKEND_URL}/api/auth/oauth/google`, {
+          const resp = await fetch(`${BACKEND_URL}/api/auth/oauth/google`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -84,7 +88,7 @@ if (account && account.provider === "google" && profile) {
               token.image = json.user.image || "";
             }
           } else {
-            console.error("Backend oauth/google failed", await resp.text());
+            console.error("Backend oauth/google failed:", await resp.text());
           }
         } catch (err) {
           console.error("Error calling backend oauth/google:", err);
@@ -95,17 +99,20 @@ if (account && account.provider === "google" && profile) {
     },
 
     async session({ session, token }) {
+      // ensure session.user object includes backendToken and name/email
       session.user = session.user || {};
       session.user.id = token.id;
-      session.user.name = token.name;
-      session.user.email = token.email;
-      session.user.image = token.image;
-      session.user.backendToken = token.backendToken;
+      session.user.name = token.name || session.user.name || "";
+      session.user.email = token.email || session.user.email || "";
+      session.user.image = token.image || session.user.image || "";
+      session.user.backendToken = token.backendToken || null;
       return session;
     },
   },
 
-  pages: { signIn: "/get-started" },
+  pages: {
+    signIn: "/get-started",
+  },
 
   secret: process.env.NEXTAUTH_SECRET,
 };
